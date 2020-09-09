@@ -131,7 +131,7 @@ func main() {
 	router := handleRequest()
 
 	log.Fatal(
-		// start on port 3000 by default
+		// start on port
 		http.ListenAndServe(getPort(), router),
 	)
 }
