@@ -45,10 +45,23 @@ type Post struct {
 	Body  string `json:"body"`
 }
 
-var posts []Post
+// 1) Struct for a Route
+type Route struct {
+	Name        string
+	Method      string
+	Pattern     string
+	HandlerFunc http.HandlerFunc
+}
 
-func main() {
-	handleRequest()
+type BasicResponse struct {
+	Error   int             `json:"error"`
+	Message json.RawMessage `json:"message"`
+}
+
+type Routes []Route
+
+func getIndex(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Hello world!")
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
@@ -61,31 +74,66 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	log.Println(id)
 	defer r.Body.Close()
 }
-func handleRequest() {
-	myRouter := mux.NewRouter()
+func handleRequest() *mux.Router {
 
-	// Handle all preflight request
-	myRouter.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("OPTIONS")
-		log.Println(w.Header().Get("Methods"))
+	router := mux.NewRouter().StrictSlash(true)
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Access-Control-Request-Headers, Access-Control-Request-Method, Connection, Host, Origin, User-Agent, Referer, Cache-Control, X-header")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	})
+	var routes = Routes{
+		Route{
+			"getIndex",
+			"GET",
+			"/",
+			getIndex,
+		},
+		Route{
+			"home",
+			"GET",
+			"/",
+			homePage,
+		},
+		Route{
+			"getMasterSystem",
+			"GET",
+			"/getMasterSystem",
+			getMasterSystem,
+		},
+		Route{
+			"getMasterAircraft",
+			"GET",
+			"/",
+			getMasterAircraft,
+		},
+		Route{
+			"getMasterTechnicalOrder",
+			"GET",
+			"/",
+			getMasterTechnicalOrder,
+		},
+		Route{
+			"getDetail",
+			"GET",
+			"/",
+			getDetail,
+		},
+	}
 
-	myRouter.StrictSlash(true)
-	// mux := http.NewServeMux()
+	for _, route := range routes {
+		router.
+			Methods(route.Method).
+			Path(route.Pattern).
+			Name(route.Name).
+			Handler(route.HandlerFunc)
+	}
+	return router
+}
 
-	myRouter.HandleFunc("/home", homePage).Methods("POST")
-	myRouter.HandleFunc("/getMasterSystem", getMasterSystem).Methods("GET")
-	myRouter.HandleFunc("/getMasterAircraft", getMasterAircraft).Methods("GET")
-	myRouter.HandleFunc("/getMasterTechnicalOrder", getMasterTechnicalOrder).Methods("GET")
-	myRouter.HandleFunc("/getDetail", getDetail).Methods("GET")
+func main() {
+	router := handleRequest()
 
-	http.ListenAndServe(getPort(), myRouter)
+	log.Fatal(
+		// start on port 3000 by default
+		http.ListenAndServe(getPort(), router),
+	)
 }
 
 func getMasterSystem(w http.ResponseWriter, r *http.Request) {
@@ -100,9 +148,12 @@ func getMasterSystem(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-
-		w.Write(js)
+		println(response)
+		w.Header().Set("Content-type", "application/json; charset=UTF-8;")
+		json.NewEncoder(w).Encode(BasicResponse{
+			0,
+			(js),
+		})
 	}
 
 }
@@ -211,6 +262,7 @@ func getJSON(sqlString string) (string, error) {
 		}
 		tableData = append(tableData, entry)
 	}
+
 	jsonData, err := json.Marshal(tableData)
 	if err != nil {
 		return "", err
