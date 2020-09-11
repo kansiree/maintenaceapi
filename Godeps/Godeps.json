@@ -1,0 +1,12 @@
+{
+	"ImportPath": "github.com/kansiree/go-api",
+	"GoVersion": "go1.13",
+	"GodepVersion": "v80",
+	"Deps": [
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.5.0-17-g12508c8",
+			"Rev": "12508c83901b1a418e3dea51850f956f32506f4e"
+		}
+	]
+}
