@@ -1,5 +1,6 @@
 package main
 
+<<<<<<< HEAD
 import (
 	"encoding/json"
 	"net/http"
@@ -47,4 +48,10 @@ type Detaildata []struct {
 	SerailNumberRemove  string `json:"serail_number_remove"`
 	SerailNumberinstall string `json:"serail_number_install"`
 	Remark              string `json:"remark"`
+=======
+// Basic response struct
+type BasicResponse struct {
+	Error   int    `json:"error"`
+	Message string `json:"message"`
+>>>>>>> 1283c7b6601c5cc5d164e284d9439b1e27d93867
 }
