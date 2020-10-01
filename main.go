@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,22 +11,13 @@ import (
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/storage"
+	firebase "firebase.google.com/go"
+	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/mux"
+	"google.golang.org/api/option"
 )
-
-type Post struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-}
-
-// 1) Struct for a Route
-type Route struct {
-	Name        string
-	Method      string
-	Pattern     string
-	HandlerFunc http.HandlerFunc
-}
 
 type BasicResponse struct {
 	Error   int             `json:"error"`
@@ -41,6 +33,11 @@ type Masterdata []struct {
 	CreatedDate string `json:"created_date"`
 	FullName    string `json:"full_name"`
 	ID          string `json:"id"`
+}
+
+type ImageStructure struct {
+	ImageName string
+	URL       string
 }
 
 type Detaildata []struct {
@@ -63,87 +60,36 @@ type Detaildata []struct {
 	Remark              string `json:"remark"`
 }
 
-type Routes []Route
-
-func handleRequest() *mux.Router {
-
-	router := mux.NewRouter().StrictSlash(true)
-
-	var routes = Routes{
-
-		Route{
-			"home",
-			"GET",
-			"/",
-			homePage,
-		},
-		Route{
-			"getMasterSystem",
-			"GET",
-			"/getMasterSystem",
-			getMasterSystem,
-		},
-		Route{
-			"getMasterAircraft",
-			"GET",
-			"/getMasterAircraft",
-			getMasterAircraft,
-		},
-		Route{
-			"getMasterTechnicalOrder",
-			"GET",
-			"/getMasterTechnicalOrder",
-			getMasterTechnicalOrder,
-		},
-		Route{
-			"getDetail",
-			"GET",
-			"/getDetail",
-			getDetail,
-		},
-		Route{
-			"insertDetail",
-			"POST",
-			"/insertDetail",
-			insertDetail,
-		},
-	}
-
-	for _, route := range routes {
-		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(route.HandlerFunc)
-	}
-	return router
-}
-
 func main() {
-	router := handleRequest()
 
+	router := gin.Default()
+
+	router.GET("/", homePage)
+	router.GET("getMasterSystem", getMasterSystem)
+	router.GET("getMasterAircraft", getMasterAircraft)
+	router.GET("getMasterTechnicalOrder", getMasterTechnicalOrder)
+	router.POST("uploadImage", uploadImage)
 	log.Fatal(
 		// start on port
 		http.ListenAndServe(getPort(), router),
 	)
+
+	router.Run()
 }
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello world!")
 }
 
-func homePage(w http.ResponseWriter, r *http.Request) {
+func homePage(c *gin.Context) {
 
-	err := r.ParseForm()
-	if err != nil {
-		panic(err)
-	}
-	id := r.FormValue("id")
-	log.Println(id)
-	defer r.Body.Close()
+	c.JSON(http.StatusOK, gin.H{
+		"message": "pong",
+	})
+
 }
 
-func getMasterSystem(w http.ResponseWriter, r *http.Request) {
+func getMasterSystem(c *gin.Context) {
 
 	var masters Masterdata
 	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_system")
@@ -152,19 +98,18 @@ func getMasterSystem(w http.ResponseWriter, r *http.Request) {
 	} else {
 		js, err := convertStringToJsonFormat(response, masters)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-type", "application/json; charset=UTF-8;")
-		json.NewEncoder(w).Encode(BasicResponse{
+		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 			0,
 			js,
-		})
+		}))
 	}
 
 }
 
-func getMasterAircraft(w http.ResponseWriter, r *http.Request) {
+func getMasterAircraft(c *gin.Context) {
 
 	var masters Masterdata
 	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_aircraft")
@@ -173,19 +118,18 @@ func getMasterAircraft(w http.ResponseWriter, r *http.Request) {
 	} else {
 		js, err := convertStringToJsonFormat(response, masters)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-type", "application/json; charset=UTF-8;")
-		json.NewEncoder(w).Encode(BasicResponse{
+		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 			0,
 			js,
-		})
+		}))
 	}
 
 }
 
-func getMasterTechnicalOrder(w http.ResponseWriter, r *http.Request) {
+func getMasterTechnicalOrder(c *gin.Context) {
 
 	var masters Masterdata
 	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_technical_order")
@@ -194,37 +138,35 @@ func getMasterTechnicalOrder(w http.ResponseWriter, r *http.Request) {
 	} else {
 		js, err := convertStringToJsonFormat(response, masters)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-type", "application/json; charset=UTF-8;")
-		json.NewEncoder(w).Encode(BasicResponse{
+		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 			0,
 			js,
-		})
+		}))
 	}
 
 }
 
-func insertDetail(w http.ResponseWriter, r *http.Request) {
+func insertDetail(c *gin.Context) {
 	var detailData Detaildata
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	body, err := ioutil.ReadAll(io.LimitReader(c.Request.Body, 1048576))
 	if err != nil {
 		panic(err)
 	}
-	if err := r.Body.Close(); err != nil {
+	if err := c.Request.Body.Close(); err != nil {
 		panic(err)
 	}
 	if err := json.Unmarshal(body, &detailData); err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(422)
-		if err := json.NewEncoder(w).Encode(err); err != nil {
-			panic(err)
-		}
+
+		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, json.NewEncoder(c.Writer).Encode(err))
+		panic(err)
+
 	}
 	db, err := connectDB()
-	//	response, err := queryDB("insert into maintanace_detail values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ")
-	stmt, err := db.Prepare("insert into blogs values(?,?,?,?,?)")
+	stmt, err := db.Prepare("insert into maintanace_detail values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ")
 	if err != nil {
 		panic(err)
 	}
@@ -232,14 +174,14 @@ func insertDetail(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	w.Header().Set("Content-type", "application/json; charset=UTF-8;")
-	json.NewEncoder(w).Encode(BasicResponseStringMessage{
+	c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponseStringMessage{
 		0,
 		"success",
-	})
+	}))
+
 }
 
-func getDetail(w http.ResponseWriter, r *http.Request) {
+func getDetail(c *gin.Context) {
 	var dataDetail Detaildata
 	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.maintenace_detail")
 	if err != nil {
@@ -247,15 +189,96 @@ func getDetail(w http.ResponseWriter, r *http.Request) {
 	} else {
 		js, err := convertStringToDetailJsonFormat(response, dataDetail)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, json.NewEncoder(c.Writer).Encode(err))
+			panic(err)
 		}
-		w.Header().Set("Content-type", "application/json; charset=UTF-8;")
-		json.NewEncoder(w).Encode(BasicResponse{
-			0,
-			js,
-		})
+
+		{
+
+			c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
+				0,
+				js,
+			}))
+		}
 	}
+}
+
+func uploadImage(c *gin.Context) {
+	config := &firebase.Config{
+		StorageBucket: "maintenance-7f16b.appspot.com",
+	}
+
+	file, handler, err := c.Request.FormFile("image")
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer file.Close()
+	imagePath := handler.Filename
+	fmt.Println("imagePath: " + imagePath)
+	opt := option.WithCredentialsFile("maintenance-7f16b-key.json")
+
+	ctx := context.Background()
+	app, err := firebase.NewApp(ctx, config, opt)
+	if err != nil {
+		log.Fatalln(err)
+		c.JSON(http.StatusInternalServerError, err.Error())
+
+	}
+	client, err := app.Storage(ctx)
+	//client1, err := firestore.NewClient(ctx, "34322657306")
+
+	if err != nil {
+		log.Fatalln(err)
+		c.JSON(http.StatusInternalServerError, err.Error())
+
+	}
+
+	bucket, err := client.DefaultBucket()
+	if err != nil {
+		log.Fatalln(err)
+		c.JSON(http.StatusInternalServerError, err.Error())
+
+	}
+	writer := bucket.Object(imagePath).NewWriter(ctx)
+	writer.ObjectAttrs.CacheControl = "no-cache"
+	writer.ObjectAttrs.ACL = []storage.ACLRule{
+		{
+			Entity: storage.AllUsers,
+			Role:   storage.RoleReader,
+		},
+	}
+	//createImageUrl(imagePath, config.StorageBucket, ctx, client1)
+	if _, err = io.Copy(writer, file); err != nil {
+		log.Fatalln(err)
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer file.Close()
+
+	if err := writer.Close(); err != nil {
+		log.Fatalln(err)
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusCreated, "Create image success.")
+
+}
+
+func createImageUrl(imagePath string, bucket string, ctx context.Context, client *firestore.Client) error {
+	imageStructure := ImageStructure{
+		ImageName: imagePath,
+		URL:       "https://storage.cloud.google.com/" + bucket + "/" + imagePath,
+	}
+
+	_, _, err := client.Collection("image").Add(ctx, imageStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getPort() string {
