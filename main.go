@@ -217,7 +217,7 @@ func uploadImage(c *gin.Context) {
 	}
 	defer file.Close()
 	imagePath := handler.Filename
-	fmt.Println("imagePath: " + imagePath)
+	// fmt.Println("imagePath: " + imagePah)
 	opt := option.WithCredentialsFile("maintenance-7f16b-key.json")
 
 	ctx := context.Background()
