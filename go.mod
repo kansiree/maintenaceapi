@@ -1,4 +1,4 @@
-module mantenance
+module github.com/kansiree/maintenaceapi
 
 go 1.15
 

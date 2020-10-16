@@ -19,10 +19,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-type BasicResponse struct {
-	Error   int             `json:"error"`
-	Message json.RawMessage `json:"message"`
-}
+// type BasicResponse struct {
+// 	Error   int             `json:"error"`
+// 	Message json.RawMessage `json:"message"`
+// }
 
 type BasicResponseStringMessage struct {
 	Error   int    `json:"error"`
@@ -123,12 +123,7 @@ func getMasterAircraft(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		c.Header("Content-Type", "application/json; charset=utf-8")
-
-		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
-			0,
-			js,
-		}))
+		setResSucceed(c, js)
 	}
 
 }
