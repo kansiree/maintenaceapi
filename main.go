@@ -19,14 +19,14 @@ import (
 	"google.golang.org/api/option"
 )
 
-// type BasicResponse struct {
-// 	Error   int             `json:"error"`
-// 	Message json.RawMessage `json:"message"`
-// }
-
 type BasicResponseStringMessage struct {
 	Error   int    `json:"error"`
 	Message string `json:"message"`
+}
+
+type BasicResponse struct {
+	Error   int             `json:"error"`
+	Message json.RawMessage `json:"message"`
 }
 
 type Masterdata []struct {
@@ -103,10 +103,8 @@ func getMasterSystem(c *gin.Context) {
 		}
 		c.Header("Content-Type", "application/json; charset=utf-8")
 
-		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
-			0,
-			js,
-		}))
+		setResSucceed(c, js)
+
 	}
 
 }
