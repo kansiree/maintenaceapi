@@ -82,6 +82,7 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func homePage(c *gin.Context) {
+	c.Header("Content-Type", "application/json; charset=utf-8")
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "pong",
@@ -90,7 +91,6 @@ func homePage(c *gin.Context) {
 }
 
 func getMasterSystem(c *gin.Context) {
-
 	var masters Masterdata
 	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_system")
 	if err != nil {
@@ -101,6 +101,8 @@ func getMasterSystem(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+		c.Header("Content-Type", "application/json; charset=utf-8")
+
 		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 			0,
 			js,
@@ -121,6 +123,8 @@ func getMasterAircraft(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+		c.Header("Content-Type", "application/json; charset=utf-8")
+
 		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 			0,
 			js,
@@ -141,6 +145,8 @@ func getMasterTechnicalOrder(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+		c.Header("Content-Type", "application/json; charset=utf-8")
+
 		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 			0,
 			js,
@@ -174,6 +180,8 @@ func insertDetail(c *gin.Context) {
 	if err != nil {
 		panic(err.Error())
 	}
+	c.Header("Content-Type", "application/json; charset=utf-8")
+
 	c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponseStringMessage{
 		0,
 		"success",
@@ -195,6 +203,7 @@ func getDetail(c *gin.Context) {
 		}
 
 		{
+			c.Header("Content-Type", "application/json; charset=utf-8")
 
 			c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
 				0,
@@ -263,6 +272,8 @@ func uploadImage(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
+	c.Header("Content-Type", "application/json; charset=utf-8")
+
 	c.JSON(http.StatusCreated, "Create image success.")
 
 }
