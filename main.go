@@ -102,8 +102,8 @@ func getMasterSystem(c *gin.Context) {
 			return
 		}
 		c.Header("Content-Type", "application/json; charset=utf-8")
-
-		setResSucceed(c, js)
+		dataRes := &BasicResponse{0, js}
+		c.JSON(http.StatusOK, dataRes)
 
 	}
 
@@ -121,7 +121,9 @@ func getMasterAircraft(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		setResSucceed(c, js)
+		c.Header("Content-Type", "application/json; charset=utf-8")
+		dataRes := &BasicResponse{0, js}
+		c.JSON(http.StatusOK, dataRes)
 	}
 
 }
@@ -139,11 +141,8 @@ func getMasterTechnicalOrder(c *gin.Context) {
 			return
 		}
 		c.Header("Content-Type", "application/json; charset=utf-8")
-
-		c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
-			0,
-			js,
-		}))
+		dataRes := &BasicResponse{0, js}
+		c.JSON(http.StatusOK, dataRes)
 	}
 
 }
@@ -198,10 +197,9 @@ func getDetail(c *gin.Context) {
 		{
 			c.Header("Content-Type", "application/json; charset=utf-8")
 
-			c.JSON(0, json.NewEncoder(c.Writer).Encode(BasicResponse{
-				0,
-				js,
-			}))
+			dataRes := &BasicResponse{0, js}
+			c.JSON(http.StatusOK, dataRes)
+
 		}
 	}
 }
