@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"maintenaceApi/databaseManage"
+	"maintenaceApi/unit"
 	"net/http"
 	"os"
 
@@ -15,7 +16,6 @@ import (
 	"cloud.google.com/go/storage"
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
-	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/api/option"
 )
 
@@ -92,7 +92,7 @@ func homePage(c *gin.Context) {
 
 func getMasterSystem(c *gin.Context) {
 	var masters Masterdata
-	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_system")
+	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM " + unit.MASTER_SYSTEM_TABLE)
 	if err != nil {
 		log.Fatalln(err)
 	} else {
@@ -112,7 +112,7 @@ func getMasterSystem(c *gin.Context) {
 func getMasterAircraft(c *gin.Context) {
 
 	var masters Masterdata
-	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_aircraft")
+	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_aircraft")
 	if err != nil {
 		log.Fatalln(err)
 	} else {
@@ -131,7 +131,7 @@ func getMasterAircraft(c *gin.Context) {
 func getMasterTechnicalOrder(c *gin.Context) {
 
 	var masters Masterdata
-	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_technical_order")
+	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_technical_order")
 	if err != nil {
 		log.Fatalln(err)
 	} else {
@@ -163,7 +163,7 @@ func insertDetail(c *gin.Context) {
 		panic(err)
 
 	}
-	db, err := connectDB()
+	db, err := databaseManage.ConnectDB()
 	stmt, err := db.Prepare("insert into maintanace_detail values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ")
 	if err != nil {
 		panic(err)
@@ -183,7 +183,8 @@ func insertDetail(c *gin.Context) {
 
 func getDetail(c *gin.Context) {
 	var dataDetail Detaildata
-	response, err := selecDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.maintenace_detail")
+
+	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.maintenace_detail")
 	if err != nil {
 		log.Fatalln(err)
 	} else {
@@ -193,10 +194,10 @@ func getDetail(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, json.NewEncoder(c.Writer).Encode(err))
 			panic(err)
 		}
-
 		{
-			c.Header("Content-Type", "application/json; charset=utf-8")
 
+			c.Header("Content-Type", "application/json; charset=utf-8")
+			unit.SetResponseSuccess(c, js)
 			dataRes := &BasicResponse{0, js}
 			c.JSON(http.StatusOK, dataRes)
 
@@ -290,58 +291,6 @@ func getPort() string {
 		fmt.Println("No Port In Heroku " + port)
 	}
 	return ":" + port
-}
-
-func connectDB() (*sql.DB, error) {
-	return sql.Open("mysql", "sz0debklevf8wjhf:gu2af8swu50tjc3k@tcp(u3r5w4ayhxzdrw87.cbetxkdyhwsb.us-east-1.rds.amazonaws.com:3306)/t016ffukzsi0y5ie")
-}
-
-func queryDB(sqlString string) (*sql.Rows, error) {
-	db, err := connectDB()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return db.Query(sqlString)
-}
-
-func selecDataReturnJsonFormat(sqlString string) (string, error) {
-	rows, err := queryDB(sqlString)
-	defer rows.Close()
-	columns, err := rows.Columns()
-	if err != nil {
-		return "", err
-	}
-
-	count := len(columns)
-	tableData := make([]map[string]interface{}, 0)
-	values := make([]interface{}, count)
-	valuePtrs := make([]interface{}, count)
-
-	for rows.Next() {
-		for i := 0; i < count; i++ {
-			valuePtrs[i] = &values[i]
-		}
-		rows.Scan(valuePtrs...)
-		entry := make(map[string]interface{})
-		for i, col := range columns {
-			var v interface{}
-			val := values[i]
-			b, ok := val.([]byte)
-			if ok {
-				v = string(b)
-			} else {
-				v = val
-			}
-			entry[col] = v
-		}
-		tableData = append(tableData, entry)
-	}
-	fmt.Println(tableData)
-	jsonData, err := json.Marshal(tableData)
-	if err != nil {
-		return "", err
-	}
-	return string(jsonData), nil
 }
 
 func convertStringToJsonFormat(message string, format Masterdata) ([]byte, error) {
