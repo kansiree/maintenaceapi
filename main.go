@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,11 +11,7 @@ import (
 	"net/http"
 	"os"
 
-	"cloud.google.com/go/firestore"
-	"cloud.google.com/go/storage"
-	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/api/option"
 )
 
 type BasicResponseStringMessage struct {
@@ -131,7 +126,7 @@ func getMasterAircraft(c *gin.Context) {
 func getMasterTechnicalOrder(c *gin.Context) {
 
 	var masters Masterdata
-	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.master_technical_order")
+	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM " + unit.MASTER_TECHNICAL_ORDER)
 	if err != nil {
 		log.Fatalln(err)
 	} else {
@@ -164,7 +159,7 @@ func insertDetail(c *gin.Context) {
 
 	}
 	db, err := databaseManage.ConnectDB()
-	stmt, err := db.Prepare("insert into maintanace_detail values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ")
+	stmt, err := db.Prepare("insert into " + unit.MAINTANACE_DETAIL + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ")
 	if err != nil {
 		panic(err)
 	}
@@ -179,109 +174,6 @@ func insertDetail(c *gin.Context) {
 		"success",
 	}))
 
-}
-
-func getDetail(c *gin.Context) {
-	var dataDetail Detaildata
-
-	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM t016ffukzsi0y5ie.maintenace_detail")
-	if err != nil {
-		log.Fatalln(err)
-	} else {
-		js, err := convertStringToDetailJsonFormat(response, dataDetail)
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, json.NewEncoder(c.Writer).Encode(err))
-			panic(err)
-		}
-		{
-
-			c.Header("Content-Type", "application/json; charset=utf-8")
-			unit.SetResponseSuccess(c, js)
-			dataRes := &BasicResponse{0, js}
-			c.JSON(http.StatusOK, dataRes)
-
-		}
-	}
-}
-
-func uploadImage(c *gin.Context) {
-	config := &firebase.Config{
-		StorageBucket: "maintenance-7f16b.appspot.com",
-	}
-
-	file, handler, err := c.Request.FormFile("image")
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
-	defer file.Close()
-	imagePath := handler.Filename
-	// fmt.Println("imagePath: " + imagePah)
-	opt := option.WithCredentialsFile("maintenance-7f16b-key.json")
-
-	ctx := context.Background()
-	app, err := firebase.NewApp(ctx, config, opt)
-	if err != nil {
-		log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, err.Error())
-
-	}
-	client, err := app.Storage(ctx)
-	//client1, err := firestore.NewClient(ctx, "34322657306")
-
-	if err != nil {
-		log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, err.Error())
-
-	}
-
-	bucket, err := client.DefaultBucket()
-	if err != nil {
-		log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, err.Error())
-
-	}
-	writer := bucket.Object(imagePath).NewWriter(ctx)
-	writer.ObjectAttrs.CacheControl = "no-cache"
-	writer.ObjectAttrs.ACL = []storage.ACLRule{
-		{
-			Entity: storage.AllUsers,
-			Role:   storage.RoleReader,
-		},
-	}
-	//createImageUrl(imagePath, config.StorageBucket, ctx, client1)
-	if _, err = io.Copy(writer, file); err != nil {
-		log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
-	defer file.Close()
-
-	if err := writer.Close(); err != nil {
-		log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
-	c.Header("Content-Type", "application/json; charset=utf-8")
-
-	c.JSON(http.StatusCreated, "Create image success.")
-
-}
-
-func createImageUrl(imagePath string, bucket string, ctx context.Context, client *firestore.Client) error {
-	imageStructure := ImageStructure{
-		ImageName: imagePath,
-		URL:       "https://storage.cloud.google.com/" + bucket + "/" + imagePath,
-	}
-
-	_, _, err := client.Collection("image").Add(ctx, imageStructure)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func getPort() string {
