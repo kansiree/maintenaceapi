@@ -2,11 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"log"
-	"maintenaceApi/databaseManage"
-	"maintenaceApi/unit"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
@@ -15,30 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/option"
 )
-
-func getDetail(c *gin.Context) {
-	var dataDetail Detaildata
-
-	response, err := databaseManage.SelectDataReturnJsonFormat("SELECT * FROM " + unit.MAINTANACE_DETAIL)
-	if err != nil {
-		log.Fatalln(err)
-	} else {
-		js, err := convertStringToDetailJsonFormat(response, dataDetail)
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, json.NewEncoder(c.Writer).Encode(err))
-			panic(err)
-		}
-		{
-
-			c.Header("Content-Type", "application/json; charset=utf-8")
-			unit.SetResponseSuccess(c, js)
-			dataRes := &BasicResponse{0, js}
-			c.JSON(http.StatusOK, dataRes)
-
-		}
-	}
-}
 
 func uploadImage(c *gin.Context) {
 	config := &firebase.Config{
