@@ -6,8 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"maintenaceApi/databaseManage"
-	"maintenaceApi/unit"
+	"maintenace/databaseManage"
+	"maintenace/unit"
 	"net/http"
 	"os"
 
@@ -37,7 +37,7 @@ func main() {
 	router.GET("getMasterSystem", getMasterSystem)
 	router.GET("getMasterAircraft", getMasterAircraft)
 	router.GET("getMasterTechnicalOrder", getMasterTechnicalOrder)
-	router.POST("uploadImage", uploadImage)
+	//	router.POST("uploadImage", uploadImage)
 	log.Fatal(
 		// start on port
 		http.ListenAndServe(getPort(), router),

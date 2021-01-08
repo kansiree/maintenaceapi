@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"maintenaceApi/unit"
+	"maintenace/unit"
 )
 
 func ConnectDB() (*sql.DB, error) {
